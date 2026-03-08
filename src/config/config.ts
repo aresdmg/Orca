@@ -7,7 +7,10 @@ import { FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 
 export default function config(app: FastifyInstance) {
-    app.register(cors)
+    app.register(cors, {
+        origin: "http://localhost:3000",
+        credentials: true
+    })
     app.register(helmet)
     app.register(jwt,
         {
