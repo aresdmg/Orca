@@ -1,7 +1,5 @@
 import axios from "axios"
-import { FastifyInstance, FastifyPluginAsync, FastifyPluginOptions, FastifyReply, FastifyRequest } from "fastify"
-import { users } from "../../db/schema"
-import { eq } from "drizzle-orm"
+import { FastifyInstance, FastifyPluginAsync, FastifyPluginOptions, FastifyReply, FastifyRequest, FastifySchema } from "fastify"
 import AuthService from "./auth.service"
 
 const authRoute: FastifyPluginAsync = async (app: FastifyInstance, opts: FastifyPluginOptions) => {
@@ -10,7 +8,6 @@ const authRoute: FastifyPluginAsync = async (app: FastifyInstance, opts: Fastify
         async (req: FastifyRequest, reply: FastifyReply) => {
             const token = await app.githubOAuth2.getAccessTokenFromAuthorizationCodeFlow(req)
             const accessToken = token.token.access_token
-
 
             const headers = {
                 Authorization: `Bearer ${accessToken}`,
@@ -23,9 +20,11 @@ const authRoute: FastifyPluginAsync = async (app: FastifyInstance, opts: Fastify
             ])
 
             const primaryEmail = userEmail.data.find((e: any) => e.primary)?.email
+            
+            console.log(userInfo)
 
             const authService = new AuthService(app)
-            const user = await authService.save({ name: userInfo.data.name, avatar: userInfo.data.avatar_url, email: primaryEmail })
+            const user = await authService.save({ name: userInfo.data.name, avatar: userInfo.data.avatar_url, email: primaryEmail, username: userInfo.data.login})
 
             const jwtToken = app.jwt.sign(
                 {
@@ -38,8 +37,16 @@ const authRoute: FastifyPluginAsync = async (app: FastifyInstance, opts: Fastify
             )
 
             return reply
-                .setCookie("orcaSessionToken", jwtToken, { httpOnly: true, secure: false, path: "/", sameSite: "lax" })
+                .setCookie("orcaSessionToken", jwtToken, { httpOnly: true, secure: false, path: "/", sameSite: "lax", maxAge: 1000 * 60 * 15})
                 .redirect(`${process.env.FE_URL!}/console`)
+        }
+    )
+    
+    
+    app.get(
+        "/auth/logout",
+        async (req: FastifyRequest, reply: FastifyReply) => {
+            return reply.clearCookie("orcaSessionToken", { path: "/" })
         }
     )
 }

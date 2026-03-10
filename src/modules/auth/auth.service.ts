@@ -9,7 +9,7 @@ export default class AuthService {
         this.app = fastify;
     }
 
-    save = async (data: { name: string, email: string, avatar: string }) => {
+    save = async (data: { name: string, email: string, avatar: string, username: string}) => {
         if (!data.name || !data.email || !data.avatar) {
             throw this.app.httpErrors.internalServerError("Missing information")
         }
@@ -22,7 +22,8 @@ export default class AuthService {
                     {
                         name: data.name,
                         email: data.email,
-                        avatar: data.avatar
+                        avatar: data.avatar,
+                        githubId: data.username,
                     }
                 )
                 .returning()
