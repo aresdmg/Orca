@@ -1,4 +1,4 @@
-import { boolean, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { boolean, text, timestamp, uuid, varchar, integer } from "drizzle-orm/pg-core";
 import { pgTable } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users",
@@ -14,14 +14,28 @@ export const users = pgTable("users",
     }
 );
 
+export const installations = pgTable("installations",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+        installationId: integer("installation_id"),
+        githubAccount: text("github_account").unique(),
+        accountType: varchar("account_type", { length: 255 }).$type<"user" | "organization">(),
+        createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
+    }
+)
+
 export const projects = pgTable("projects",
     {
         id: uuid("id").primaryKey().defaultRandom(),
         name: text("name").notNull(),
         fullName: text("full_name").notNull(),
         isPrivate: boolean("is_private").default(false).notNull(),
-        provider: varchar("provider", { length: 255 }).$type<"github" | "gitlab">().default("github").notNull(),
         plan: varchar("plan", { length: 40 }).$type<"FREE" | "PRO" | "ENTERPRISE">().default("FREE").notNull(),
+        provider: varchar("provider", { length: 255 }).$type<"github" | "gitlab">().default("github").notNull(),
+        repoUrl: text("repo_url").notNull(),
+        commitSha: text("commit_sha").notNull(),
+        language: varchar("language", { length: 100 }).$type<"JS" | "Go" | "Rust">().default("JS"),
+        defaultBranch: text("default_branch").default("main"),
         createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
         deletedAt: timestamp("deleted_at", { withTimezone: true, mode: "date" }),
     }
@@ -32,8 +46,7 @@ export const deployments = pgTable("deployments",
     {
         id: uuid("id").primaryKey().defaultRandom(),
         projectId: uuid("project_id").references(() => projects.id).notNull(),
-        commitSha: text("commit_sha").notNull(),
-        status: text("status").$type<"queued" | "building" | "deploying" |  "ready" | "failed">().default("queued").notNull(),
+        status: text("status").$type<"queued" | "building" | "deploying" | "ready" | "failed">().default("queued").notNull(),
         branch: text("branch").notNull(),
         createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
     }
