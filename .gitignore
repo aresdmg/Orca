@@ -140,3 +140,6 @@ dist
 
 # Drizzle
 drizzle
+
+# Private files
+**/**.pem

@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { users } from "../../db/schema";
+import { users, usersToken } from "../../db/schema";
 import { eq } from "drizzle-orm";
 
 export const save = async (app: FastifyInstance, data: { name: string, email: string, avatar: string, username: string }) => {
@@ -29,4 +29,14 @@ export const save = async (app: FastifyInstance, data: { name: string, email: st
     } else {
         return { id: existingUser.id, name: existingUser.name, username: existingUser.githubId }
     }
+}
+
+export const saveRefreshToken = async (app: FastifyInstance, hashedRefreshToken: string, userId: string, userAgent: string | null, ipAddress: string) => {
+    await app.db.insert(usersToken).values({
+        refreshToken: hashedRefreshToken,
+        userId,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        userAgent,
+        ipAddress,
+    })
 }

@@ -14,6 +14,19 @@ export const users = pgTable("users",
     }
 );
 
+export const usersToken = pgTable("users_token",
+    {
+        id: uuid("id").defaultRandom().primaryKey(),
+        refreshToken: varchar("refresh_token", { length: 255 }).notNull(),
+        userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+        expiresAt: timestamp("expires_at", { mode: "date" }).notNull(),
+        revoked: boolean("revoked").default(false).notNull(),
+        createdAt: timestamp("created_at").defaultNow().notNull(),
+        userAgent: varchar("user_agent", { length: 255 }),
+        ipAddress: varchar("ip_address", { length: 45 })
+    }
+)
+
 export const installations = pgTable("installations",
     {
         id: uuid("id").defaultRandom().primaryKey(),

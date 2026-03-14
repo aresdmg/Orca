@@ -8,13 +8,12 @@ declare module "fastify" {
 }
 
 const authPlugin: FastifyPluginAsync = async (app: FastifyInstance) => {
-
-    app.decorate("auth", async (request: FastifyRequest, reply: FastifyReply) => {
+    app.decorate("auth", async (request: FastifyRequest, reply: FastifyReply) => {     
         try {
             let token;
 
             const authHeader = request.headers.authorization
-            token = authHeader && authHeader.split(" ")[1] || request.cookies?.session_token
+            token = authHeader && authHeader.split(" ")[1] || request.cookies?.orca_access_token
 
             if (!token) {
                 throw app.httpErrors.unauthorized("Missing or invalid token")
@@ -23,6 +22,7 @@ const authPlugin: FastifyPluginAsync = async (app: FastifyInstance) => {
             const decodedInfo = app.jwt.verify<{ id: string, name: string }>(token)
             request.user = decodedInfo.id
         } catch (error) {
+            app.log.error(error)
             throw app.httpErrors.unauthorized("Unauthorized")
         }
     })
