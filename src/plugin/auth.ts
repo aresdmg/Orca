@@ -19,8 +19,8 @@ const authPlugin: FastifyPluginAsync = async (app: FastifyInstance) => {
                 throw app.httpErrors.unauthorized("Missing or invalid token")
             }
 
-            const decodedInfo = app.jwt.verify<{ id: string, name: string }>(token)
-            request.user = decodedInfo.id
+            const decodedInfo = app.jwt.verify<{ id: string, name: string, username: string }>(token)
+            request.user = decodedInfo
         } catch (error) {
             app.log.error(error)
             throw app.httpErrors.unauthorized("Unauthorized")

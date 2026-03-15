@@ -5,6 +5,7 @@ import db from "./plugin/db";
 import authRoute from "./modules/auth/auth.route";
 import oauth from "./plugin/oauth";
 import auth from "./plugin/auth";
+import { usersRoute } from "./modules/users/users.route";
 
 export default function bootstarp() {
     const app = Fastify({
@@ -28,6 +29,6 @@ export default function bootstarp() {
 
     // Route
     app.register(authRoute);
-
+    app.register(usersRoute, { prefix: "/api/v1/user" });
     return app
 }

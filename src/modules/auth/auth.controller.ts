@@ -1,6 +1,6 @@
 import axios from "axios";
 import { FastifyReply, FastifyRequest } from "fastify";
-import { installations, usersToken } from "../../db/schema";
+import { installations, users, usersToken } from "../../db/schema";
 import { and, eq } from "drizzle-orm";
 import crypto from "node:crypto";
 import * as authRepo from "../auth/auth.repository"
@@ -120,4 +120,58 @@ export const handleWebhooks = async (req: FastifyRequest, reply: FastifyReply) =
     }
 
     reply.send({ ok: true })
+}
+
+export const handleRefresh = async (req: FastifyRequest, reply: FastifyReply) => {
+    const app = req.server
+
+    const refreshToken = req.cookies?.orca_refresh_token
+
+    if (!refreshToken) {
+        throw app.httpErrors.unauthorized("Unauthorized request")
+    }
+
+    const hashedRefreshToken = hashRefreshToken(refreshToken)
+
+    const [existingToken] = await app.db
+        .select()
+        .from(usersToken)
+        .where(
+            and(
+                eq(usersToken.refreshToken, hashedRefreshToken),
+                eq(usersToken.revoked, false)
+            )
+        )
+        .limit(1)
+
+    if (!existingToken) {
+        throw app.httpErrors.unauthorized("Unauthorized request")
+    }
+
+    const [user] = await app.db
+        .select()
+        .from(users)
+        .where(
+            eq(users.id, existingToken.userId)
+        )
+        .limit(1)
+
+    if (!user) {
+        throw app.httpErrors.unauthorized("Unauthorized request")
+    }
+
+    const newAccessToken = app.jwt.sign(
+        { 
+            id: user.id, 
+            name: user.name, 
+            username: user.githubId
+        },
+        { expiresIn: "60m" }
+    )
+
+    return reply
+        .setCookie("orca_access_token", newAccessToken, { httpOnly: true, secure: false, path: "/", sameSite: "lax", maxAge: 1000 * 60 * 60 })
+        .send({
+            accessToken: newAccessToken
+        })
 }

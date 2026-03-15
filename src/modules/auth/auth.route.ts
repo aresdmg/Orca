@@ -24,6 +24,11 @@ const authRoute: FastifyPluginAsync = async (app: FastifyInstance, _opts: Fastif
         "/github/webhook",
         async (req: FastifyRequest, reply: FastifyReply) => authController.handleWebhooks(req, reply)
     )
+
+    app.post(
+        "/auth/refresh",
+        async (req: FastifyRequest, reply: FastifyReply) => authController.handleRefresh(req, reply)
+    )
 }
 
 export default authRoute
