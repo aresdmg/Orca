@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import crypto from "node:crypto";
 import * as authRepo from "../auth/auth.repository"
 import hashRefreshToken from "../../utils/hash-token";
+import { AppError } from "../../utils/error/app-error";
 
 export const handleGithubCallback = async (req: FastifyRequest, reply: FastifyReply) => {
     const app = req.server
@@ -25,7 +26,7 @@ export const handleGithubCallback = async (req: FastifyRequest, reply: FastifyRe
 
     const primaryEmail = userEmail.data.find((e: any) => e.primary)?.email
 
-    const user = await authRepo.save(app, { name: userInfo.data.name, avatar: userInfo.data.avatar_url, email: primaryEmail, username: userInfo.data.login })
+    const user = await authRepo.save(app.db, { name: userInfo.data.name, avatar: userInfo.data.avatar_url, email: primaryEmail, username: userInfo.data.login })
 
     const jwtToken = app.jwt.sign(
         {
@@ -49,7 +50,7 @@ export const handleGithubCallback = async (req: FastifyRequest, reply: FastifyRe
     const refreshToken = crypto.randomBytes(64).toString("hex")
     const hashedRefreshToken = hashRefreshToken(refreshToken)
 
-    authRepo.saveRefreshToken(app, hashedRefreshToken, user.id, req.headers["user-agent"] ?? null, req.ip)
+    authRepo.saveRefreshToken(app.db, hashedRefreshToken, user.id, req.headers["user-agent"] ?? null, req.ip)
     const installUrl = "https://github.com/apps/" + process.env.GITHUB_APP_NAME + "/installations/new";
 
     if (!existingInstallation) {
@@ -66,6 +67,8 @@ export const handleGithubCallback = async (req: FastifyRequest, reply: FastifyRe
 }
 
 export const handleLogout = async (req: FastifyRequest, reply: FastifyReply) => {
+    const db = req.server.db
+
     const userId = req.user as string
     const refreshToken = req.cookies?.orca_refresh_token
 
@@ -76,7 +79,7 @@ export const handleLogout = async (req: FastifyRequest, reply: FastifyReply) => 
     }
     const hashedRefreshToken = hashRefreshToken(refreshToken)
 
-    await app.db
+    await db
         .update(usersToken)
         .set({
             revoked: true
@@ -96,6 +99,7 @@ export const handleLogout = async (req: FastifyRequest, reply: FastifyReply) => 
 
 export const handleWebhooks = async (req: FastifyRequest, reply: FastifyReply) => {
     const event = req.headers["x-github-event"]
+    const db = req.server.db
 
     if (event === "installation") {
         const app = req.server
@@ -105,7 +109,7 @@ export const handleWebhooks = async (req: FastifyRequest, reply: FastifyReply) =
         const githubAccount = body.installation.account.login
         const accountType = body.installation.account.type === "Organization" ? "organization" : "user"
 
-        const [installation] = await app.db
+        const [installation] = await db
             .insert(installations)
             .values({
                 installationId,
@@ -115,7 +119,7 @@ export const handleWebhooks = async (req: FastifyRequest, reply: FastifyReply) =
             .returning()
 
         if (!installation) {
-            throw app.httpErrors.internalServerError("Failed to save installation")
+            throw new AppError("Installation saving failed", 500, "INTERNAL_SERVER")
         }
     }
 
@@ -124,16 +128,17 @@ export const handleWebhooks = async (req: FastifyRequest, reply: FastifyReply) =
 
 export const handleRefresh = async (req: FastifyRequest, reply: FastifyReply) => {
     const app = req.server
+    const db = req.server.db
 
     const refreshToken = req.cookies?.orca_refresh_token
 
     if (!refreshToken) {
-        throw app.httpErrors.unauthorized("Unauthorized request")
+        throw new AppError("Unauthorized request", 401, "UNAUTHORIZED_REQUEST")
     }
 
     const hashedRefreshToken = hashRefreshToken(refreshToken)
 
-    const [existingToken] = await app.db
+    const [existingToken] = await db
         .select()
         .from(usersToken)
         .where(
@@ -145,10 +150,10 @@ export const handleRefresh = async (req: FastifyRequest, reply: FastifyReply) =>
         .limit(1)
 
     if (!existingToken) {
-        throw app.httpErrors.unauthorized("Unauthorized request")
+        throw new AppError("Unauthorized request", 401, "UNAUTHORIZED_REQUEST")
     }
 
-    const [user] = await app.db
+    const [user] = await db
         .select()
         .from(users)
         .where(
@@ -157,13 +162,13 @@ export const handleRefresh = async (req: FastifyRequest, reply: FastifyReply) =>
         .limit(1)
 
     if (!user) {
-        throw app.httpErrors.unauthorized("Unauthorized request")
+        throw new AppError("User not found", 401, "NOT_FOUND")
     }
 
     const newAccessToken = app.jwt.sign(
-        { 
-            id: user.id, 
-            name: user.name, 
+        {
+            id: user.id,
+            name: user.name,
             username: user.githubId
         },
         { expiresIn: "60m" }

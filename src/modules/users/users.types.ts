@@ -1,4 +1,4 @@
-export type jwtPayloadType = {
+export type JWTPayloadType = {
     id: string,
     name: string,
     username: string
@@ -11,5 +11,5 @@ export interface IUserRepo {
     private: boolean,
     language: string,
     clone_url: string,
-    html_url: string
+    html_url: string,
 }

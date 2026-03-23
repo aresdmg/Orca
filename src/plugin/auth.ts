@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify"
 import fp from "fastify-plugin"
+import { JWTPayloadType } from "../modules/users/users.types"
 
 declare module "fastify" {
     interface FastifyInstance {
@@ -8,7 +9,7 @@ declare module "fastify" {
 }
 
 const authPlugin: FastifyPluginAsync = async (app: FastifyInstance) => {
-    app.decorate("auth", async (request: FastifyRequest, reply: FastifyReply) => {     
+    app.decorate("auth", async (request: FastifyRequest, reply: FastifyReply) => {
         try {
             let token;
 
@@ -19,7 +20,7 @@ const authPlugin: FastifyPluginAsync = async (app: FastifyInstance) => {
                 throw app.httpErrors.unauthorized("Missing or invalid token")
             }
 
-            const decodedInfo = app.jwt.verify<{ id: string, name: string, username: string }>(token)
+            const decodedInfo = app.jwt.verify<JWTPayloadType>(token)
             request.user = decodedInfo
         } catch (error) {
             app.log.error(error)

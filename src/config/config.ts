@@ -5,6 +5,7 @@ import sensible from "@fastify/sensible";
 import cookies from "@fastify/cookie";
 import { FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
+import handleAppError from "../utils/error/error";
 
 export default function config(app: FastifyInstance) {
     app.register(cors, {
@@ -25,4 +26,6 @@ export default function config(app: FastifyInstance) {
     
     app.setValidatorCompiler(validatorCompiler)
     app.setSerializerCompiler(serializerCompiler)
+    
+    handleAppError(app)
 }

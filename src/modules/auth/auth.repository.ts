@@ -1,13 +1,14 @@
-import { FastifyInstance } from "fastify"
 import { users, usersToken } from "../../db/schema"
 import { eq } from "drizzle-orm"
+import { NodePgDatabase } from "drizzle-orm/node-postgres"
+import { AppError } from "../../utils/error/app-error"
 
-export const save = async (app: FastifyInstance, data: { name: string, email: string, avatar: string, username: string }) => {
+export const save = async (db: NodePgDatabase<Record<string, unknown>>, data: { name: string, email: string, avatar: string, username: string }) => {
     if (!data.name || !data.email || !data.avatar) {
-        throw app.httpErrors.internalServerError("Missing information")
+        throw new AppError("Invalid inputs", 400, "VALIDATION_ERROR")
     }
 
-    const [existingUser] = await app.db
+    const [existingUser] = await db
         .select()
         .from(users)
         .where(
@@ -15,7 +16,7 @@ export const save = async (app: FastifyInstance, data: { name: string, email: st
         )
 
     if (!existingUser) {
-        const [user] = await app.db
+        const [user] = await db
             .insert(users)
             .values(
                 {
@@ -28,7 +29,7 @@ export const save = async (app: FastifyInstance, data: { name: string, email: st
             .returning()
 
         if (!user) {
-            throw app.httpErrors.internalServerError("Failed to create user")
+            throw new AppError("User creation failed", 500, "INTERNAL_SERVER_ERROR")
         }
 
         return { id: user.id, name: user.name, username: user.githubId }
@@ -37,12 +38,16 @@ export const save = async (app: FastifyInstance, data: { name: string, email: st
     }
 }
 
-export const saveRefreshToken = async (app: FastifyInstance, hashedRefreshToken: string, userId: string, userAgent: string | null, ipAddress: string) => {
-    await app.db.insert(usersToken).values({
-        refreshToken: hashedRefreshToken,
-        userId,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        userAgent,
-        ipAddress,
-    })
+export const saveRefreshToken = async (db: NodePgDatabase<Record<string, unknown>>, hashedRefreshToken: string, userId: string, userAgent: string | null, ipAddress: string) => {
+    try {
+        await db.insert(usersToken).values({
+            refreshToken: hashedRefreshToken,
+            userId,
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            userAgent,
+            ipAddress,
+        })
+    } catch (error) {
+        throw new AppError("Database failed", 500, "INTERNAL_SERVER_ERROR")
+    }
 }

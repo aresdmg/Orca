@@ -1,12 +1,13 @@
-import { FastifyInstance } from "fastify";
-import { jwtPayloadType } from "./users.types";
 import { installations, users } from "../../db/schema";
 import { and, eq } from "drizzle-orm";
 import axios from "axios";
 import { generateGithubJWT } from "../../utils/github";
+import { JWTPayloadType } from "./users.types";
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { AppError } from "../../utils/error/app-error";
 
-export const getUserRepos = async (app: FastifyInstance, userFromJwt: jwtPayloadType) => {
-    const [user] = await app.db
+export const getUserRepos = async (db: NodePgDatabase<Record<string, unknown>>, userFromJwt: JWTPayloadType) => {
+    const [user] = await db
         .select()
         .from(users)
         .where(
@@ -17,10 +18,10 @@ export const getUserRepos = async (app: FastifyInstance, userFromJwt: jwtPayload
         ).limit(1)
 
     if (!user) {
-        throw app.httpErrors.unauthorized("Unauthorized user")
+        throw new AppError("User not found", 404, "NOT_FOUND")
     }
 
-    const [installation] = await app.db
+    const [installation] = await db
         .select()
         .from(installations)
         .where(
@@ -30,7 +31,7 @@ export const getUserRepos = async (app: FastifyInstance, userFromJwt: jwtPayload
         ).limit(1)
 
     if (!installation) {
-        throw app.httpErrors.notFound("Installation not found")
+        throw new AppError("Installation not found", 404, "NOT_FOUND")
     }
 
     const githubJWT = generateGithubJWT();
@@ -51,11 +52,11 @@ export const getUserRepos = async (app: FastifyInstance, userFromJwt: jwtPayload
             installationToken = res.data?.token
         }
     } catch (error) {
-        app.log.error(error)
+        throw new Error(error as string)
     }
 
     if (!installationToken) {
-        throw app.httpErrors.internalServerError("Failed to get the installation token")
+        throw new AppError("Failed to get the installation token", 500, "INTERNAL_SERVER_ERROR")
     }
 
     try {
@@ -70,6 +71,6 @@ export const getUserRepos = async (app: FastifyInstance, userFromJwt: jwtPayload
 
         return res.data
     } catch (error) {
-        app.log.error(error)
+        throw new Error(error as string)
     }
 }
