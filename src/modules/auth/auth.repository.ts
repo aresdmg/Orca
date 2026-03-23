@@ -32,9 +32,9 @@ export const save = async (db: NodePgDatabase<Record<string, unknown>>, data: { 
             throw new AppError("User creation failed", 500, "INTERNAL_SERVER_ERROR")
         }
 
-        return { id: user.id, name: user.name, username: user.githubId }
+        return { id: user.id, name: user.name, username: user.githubId, email: user.email, role: user.role}
     } else {
-        return { id: existingUser.id, name: existingUser.name, username: existingUser.githubId }
+        return { id: existingUser.id, name: existingUser.name, username: existingUser.githubId, email: existingUser.email, role: existingUser.role }
     }
 }
 

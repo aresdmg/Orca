@@ -1,4 +1,4 @@
-import { installations, users } from "../../db/schema";
+import { installations, projects, users } from "../../db/schema";
 import { and, eq } from "drizzle-orm";
 import axios from "axios";
 import { generateGithubJWT } from "../../utils/github";
@@ -73,4 +73,40 @@ export const getUserRepos = async (db: NodePgDatabase<Record<string, unknown>>, 
     } catch (error) {
         throw new Error(error as string)
     }
+}
+
+export const getUserProjects = async (db: NodePgDatabase<Record<string, unknown>>, userFromJwt: JWTPayloadType) => {
+    if (!userFromJwt) {
+        throw new AppError("Unauthrorized request", 401, "UNAUTHORIZED_REQUEST")
+    }
+
+    const userId = userFromJwt.id
+
+    const projectsFromDB = await db
+        .select()
+        .from(projects)
+        .where(
+            eq(projects.userId, userId)
+        )
+
+    return projectsFromDB
+}
+
+export const getMe = async (db: NodePgDatabase<Record<string, unknown>>, userFromJwt: JWTPayloadType) => {
+    const [user] = await db
+        .select()
+        .from(users)
+        .where(
+            and(
+                eq(users.id, userFromJwt.id),
+                eq(users.email, userFromJwt.email),
+            )
+    )
+        .limit(1)
+
+    if (!user) {
+        throw new AppError("User not found", 404, "NOT_FOUND")
+    }
+    
+    return user
 }

@@ -1,7 +1,9 @@
 export type JWTPayloadType = {
     id: string,
     name: string,
-    username: string
+    username: string,
+    email: string,
+    role: string
 }
 
 export interface IUserRepo {

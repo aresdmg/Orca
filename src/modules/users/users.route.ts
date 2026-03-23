@@ -7,4 +7,16 @@ export const usersRoute = (app: FastifyInstance, _opts: FastifyPluginOptions) =>
         { preHandler: [app.auth] },
         async (req: FastifyRequest, reply: FastifyReply) => usersController.getUserRepos(req, reply)
     )
+
+    app.get(
+        "/projects",
+        { preHandler: [app.auth] },
+        async (req: FastifyRequest, reply: FastifyReply) => usersController.getUserProjects(req, reply)
+    )
+
+    app.get(
+        "/me",
+        { preHandler: [app.auth] },
+        async (req: FastifyRequest, reply: FastifyReply) => usersController.getMe(req, reply)
+    )
 }

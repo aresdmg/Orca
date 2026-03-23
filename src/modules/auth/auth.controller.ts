@@ -32,7 +32,8 @@ export const handleGithubCallback = async (req: FastifyRequest, reply: FastifyRe
         {
             id: user.id,
             name: user.name,
-            username: user.username
+            username: user.username,
+            email: user.email
         },
         {
             expiresIn: "60m"
