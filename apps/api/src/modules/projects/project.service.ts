@@ -82,6 +82,7 @@ export const createProject = async (db: NodePgDatabase<Record<string, unknown>>,
         .values({
             userId: user.id,
             name: data.name,
+            plan: data.plan.toUpperCase() as "FREE" | "PRO" | "ENTERPRISE",
             repoUrl: data.repoUrl,
             isPrivate: data.isPrivate,
             fullName: data.fullName,
