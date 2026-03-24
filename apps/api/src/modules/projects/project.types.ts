@@ -5,6 +5,7 @@ export const createBodySchema = z.object({
     fullName: z.string().min(3),
     plan: z.enum(["free", "pro"]),
     repoUrl: z.string().min(1, "Select a repository"),
+    cloneUrl: z.string().min(1),
     isPrivate: z.boolean(),
 })
 

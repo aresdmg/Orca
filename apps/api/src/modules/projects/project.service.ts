@@ -1,7 +1,7 @@
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { JWTPayloadType } from "../users/users.types";
 import { CreateBody } from "./project.types";
-import { installations, projects } from "../../db/schema";
+import { deployments, installations, projects } from "../../db/schema";
 import { and } from "drizzle-orm";
 import { eq } from "drizzle-orm";
 import { AppError } from "../../utils/error/app-error";
@@ -9,7 +9,7 @@ import axios from "axios";
 import { generateGithubJWT } from "../../utils/github";
 
 export const createProject = async (db: NodePgDatabase<Record<string, unknown>>, data: CreateBody, user: JWTPayloadType) => {
-    if (!data.name || !data.repoUrl || !data.plan || !data.fullName) {
+    if (!data.name || !data.repoUrl || !data.plan || !data.fullName || !data.cloneUrl) {
         throw new AppError("Invalid project input", 400, "VALIDATION_ERROR");
     }
 
@@ -66,7 +66,7 @@ export const createProject = async (db: NodePgDatabase<Record<string, unknown>>,
     }
 
     const projectFullName = user.username + "/" + data.name
-    const getCommitSha = await axios.get(`https://api.github.com/repos/${projectFullName}/commits`,
+    const getBranch = await axios.get(`https://api.github.com/repos/${projectFullName}/branches`,
         {
             headers: {
                 Authorization: `Bearer ${installationToken}`,
@@ -75,7 +75,8 @@ export const createProject = async (db: NodePgDatabase<Record<string, unknown>>,
         }
     )
 
-    const latestCommitSha = getCommitSha.data[0]?.sha
+    const latestCommitSha = getBranch.data[0]?.commit?.sha
+    const branchName = getBranch.data[0]?.name
 
     const [createdProject] = await db
         .insert(projects)
@@ -94,5 +95,21 @@ export const createProject = async (db: NodePgDatabase<Record<string, unknown>>,
         throw new AppError("Project creation failed", 500, "FAILED_PROJECT_CREATION")
     }
 
+    const [deployedProject] = await db
+        .insert(deployments)
+        .values({
+            projectId: createdProject.id,
+            repoUrl: createdProject.repoUrl,
+            cloneUrl: data.cloneUrl,
+            commitSha: latestCommitSha,
+            status: "queued",
+            branch: branchName
+        })
+        .returning()
+
+    if (!deployedProject) {
+        throw new AppError("Deployement creation failed", 500, "FAILED_DEPLOYMENT_CREATION")
+    }
+    
     return createdProject
 }
