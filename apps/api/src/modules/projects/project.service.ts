@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { AppError } from "../../utils/error/app-error";
 import axios from "axios";
 import { generateGithubJWT } from "../../utils/github";
+import { deployQueue } from "@repo/queue"
 
 export const createProject = async (db: NodePgDatabase<Record<string, unknown>>, data: CreateBody, user: JWTPayloadType) => {
     if (!data.name || !data.repoUrl || !data.plan || !data.fullName || !data.cloneUrl) {
@@ -110,6 +111,31 @@ export const createProject = async (db: NodePgDatabase<Record<string, unknown>>,
     if (!deployedProject) {
         throw new AppError("Deployement creation failed", 500, "FAILED_DEPLOYMENT_CREATION")
     }
-    
+
+    const queueData = {
+        id: deployedProject.id,
+        name: createdProject.fullName,
+        repoUrl: deployedProject.repoUrl,
+        cloneUrl: deployedProject.cloneUrl,
+        commitSha: deployedProject.commitSha,
+    }
+
+    try {
+        const buildJob = await deployQueue.add(
+            "build",
+            queueData,
+            {
+                attempts: 3,
+                backoff: {
+                    type: 'exponential',
+                    delay: 2000
+                }
+            }
+        )
+        console.log(`Job queued: ${buildJob.id}`)
+    } catch (error) {
+        console.log(`Queue error : ${error}`)
+    }
+
     return createdProject
 }
