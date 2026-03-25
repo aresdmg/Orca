@@ -7,6 +7,7 @@ export const createBodySchema = z.object({
     repoUrl: z.string().min(1, "Select a repository"),
     cloneUrl: z.string().min(1),
     isPrivate: z.boolean(),
+    language: z.string().min(1)
 })
 
 export type CreateBody = z.infer<typeof createBodySchema>

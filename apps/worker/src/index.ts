@@ -1,5 +1,7 @@
 import { Worker } from "bullmq";
 import { connection } from "@repo/queue"
+import nodeBuilder from "./process/node-builder";
+import { queueData } from "./types/builder.types";
 
 function startWorker() {
     const worker = new Worker(
@@ -7,7 +9,7 @@ function startWorker() {
         async (job) => {
             switch (job.name) {
                 case 'build':
-                    // to be implemented
+                    const builderInfo = nodeBuilder(job.data as queueData)
                     break;
                 case 'test':
                     // to be implemented
@@ -24,15 +26,7 @@ function startWorker() {
     )
 
     worker.on('ready', () => {
-        console.log(`Worker ready`);
-    });
-
-    worker.on('active', (job) => {
-        console.log(`Processing job ${job.id}`);
-    });
-
-    worker.on('completed', (job) => {
-        console.log(`Job ${job.id} completed`);
+        console.log(`Ready when you are.`);
     });
 
     worker.on('failed', (job, err) => {

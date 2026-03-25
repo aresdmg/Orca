@@ -10,7 +10,7 @@ import { generateGithubJWT } from "../../utils/github";
 import { deployQueue } from "@repo/queue"
 
 export const createProject = async (db: NodePgDatabase<Record<string, unknown>>, data: CreateBody, user: JWTPayloadType) => {
-    if (!data.name || !data.repoUrl || !data.plan || !data.fullName || !data.cloneUrl) {
+    if (!data.name || !data.repoUrl || !data.plan || !data.fullName || !data.cloneUrl || !data.language) {
         throw new AppError("Invalid project input", 400, "VALIDATION_ERROR");
     }
 
@@ -89,6 +89,7 @@ export const createProject = async (db: NodePgDatabase<Record<string, unknown>>,
             isPrivate: data.isPrivate,
             fullName: data.fullName,
             commitSha: latestCommitSha,
+            language: data.language
         })
         .returning()
 
@@ -118,6 +119,7 @@ export const createProject = async (db: NodePgDatabase<Record<string, unknown>>,
         repoUrl: deployedProject.repoUrl,
         cloneUrl: deployedProject.cloneUrl,
         commitSha: deployedProject.commitSha,
+        language: createdProject.language
     }
 
     try {

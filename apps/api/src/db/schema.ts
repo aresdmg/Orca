@@ -48,6 +48,7 @@ export const projects = pgTable("projects",
         provider: varchar("provider", { length: 255 }).$type<"github">().default("github").notNull(),
         repoUrl: text("repo_url").notNull().unique(),
         commitSha: text("commit_sha").notNull(),
+        language: text("language").default("NONE").notNull(),
         createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
         deletedAt: timestamp("deleted_at", { withTimezone: true, mode: "date" }),
     }
