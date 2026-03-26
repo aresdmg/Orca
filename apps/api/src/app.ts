@@ -7,6 +7,7 @@ import oauth from "./plugin/oauth";
 import auth from "./plugin/auth";
 import { usersRoute } from "./modules/users/users.route";
 import { projectRoute } from "./modules/projects/project.routes";
+import handleInternalRoutes from "./utils/private";
 
 export default function bootstarp() {
     const app = Fastify({
@@ -25,12 +26,13 @@ export default function bootstarp() {
 
     app.register(db)
     app.register(oauth)
-    
+
     app.register(auth)
 
     // Route
     app.register(authRoute);
     app.register(usersRoute, { prefix: "/api/v1/user" });
     app.register(projectRoute, { prefix: "/api/v1/projects" })
+    handleInternalRoutes(app)
     return app
 }

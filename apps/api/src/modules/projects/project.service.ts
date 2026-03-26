@@ -114,7 +114,7 @@ export const createProject = async (db: NodePgDatabase<Record<string, unknown>>,
     }
 
     const queueData = {
-        id: deployedProject.id,
+        id: deployedProject.projectId,
         name: createdProject.fullName,
         repoUrl: deployedProject.repoUrl,
         cloneUrl: deployedProject.cloneUrl,

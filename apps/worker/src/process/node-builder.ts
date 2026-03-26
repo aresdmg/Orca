@@ -1,5 +1,6 @@
 import Dockerode from "dockerode"
 import { queueData } from "../types/builder.types";
+import createLogStream from "../stream";
 
 export default async function nodeBuilder(builderInfo: queueData) {
     const { id, cloneUrl, language, name } = builderInfo
@@ -11,7 +12,7 @@ export default async function nodeBuilder(builderInfo: queueData) {
 
     try {
         const docker = new Dockerode()
-        const image = "orca-node20:latest"
+        const image = "orca-node20:build"
 
         const container = await docker.createContainer({
             Image: image,
@@ -49,12 +50,25 @@ export default async function nodeBuilder(builderInfo: queueData) {
                 AutoRemove: true,
                 Memory: 1024 * 1024 * 1024,
                 CpuQuota: 50000,
-            }
+            },
+            AttachStderr: true,
+            AttachStdout: true,
         })
 
         await container.start()
 
+        const stream = await container.logs({
+            follow: true,
+            stdout: true,
+            stderr: true
+        })
+
+        const logStream = createLogStream(id)
+
+        container.modem.demuxStream(stream, logStream, logStream)
+
         const exitData = await container.wait()
+        
         if (exitData?.StatusCode === 0) {
             console.log(`Build success for project [${id}]=[${name}]`)
             return true
