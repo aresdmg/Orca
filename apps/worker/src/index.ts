@@ -1,6 +1,6 @@
 import { Worker } from "bullmq";
 import { connection } from "@repo/queue"
-import nodeBuilder from "./process/node-builder";
+import nodeBuilder from "./process/node";
 import { queueData } from "./types/builder.types";
 import dotenv from "dotenv"
 
@@ -13,15 +13,18 @@ function startWorker() {
     const worker = new Worker(
         "deploy-queue",
         async (job) => {
-            switch (job.name) {
-                case 'build':
-                    const builderInfo = nodeBuilder(job.data as queueData)
+            const jobInfo = job.data as queueData
+            let builderInfo: Awaited<boolean>
+            
+            switch (String(jobInfo.language).toLowerCase()) {
+                case 'javascript':
+                    builderInfo = await nodeBuilder(job.data as queueData)
+                    if (builderInfo) {
+                        
+                    }
                     break;
-                case 'test':
-                    // to be implemented
-                    break;
-                case 'deploy':
-                    // to be implemented
+                case 'typescript':
+                    builderInfo = await nodeBuilder(job.data as queueData)
                     break;
             }
         },

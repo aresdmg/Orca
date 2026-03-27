@@ -1,8 +1,7 @@
 import Dockerode from "dockerode"
 import { queueData } from "../types/builder.types";
-import createLogStream from "../stream";
 
-export default async function nodeBuilder(builderInfo: queueData) {
+export default async function nodeBuilder(builderInfo: queueData): Promise<boolean> {
     const { id, cloneUrl, language, name } = builderInfo
 
     console.log(`Starting build for project [${id}]=[${name}]`)
@@ -12,7 +11,7 @@ export default async function nodeBuilder(builderInfo: queueData) {
 
     try {
         const docker = new Dockerode()
-        const image = "orca-node20:build"
+        const image = "orca-node:20"
 
         const container = await docker.createContainer({
             Image: image,
@@ -29,19 +28,22 @@ export default async function nodeBuilder(builderInfo: queueData) {
                     npm install -g pnpm@8 &&
                     pnpm -v &&
                     pnpm install &&
-                    pnpm run build
+                    pnpm run build && 
+                    pnpm run test
 
                 elif [ -f yarn.lock ]; then
                     echo "Using yarn"
                     npm install -g yarn &&
                     yarn -v &&
                     yarn install &&
-                    yarn build
+                    yarn build && 
+                    yarn test
 
                 else
                     echo "Using npm"
                     npm install &&
-                    npm run build
+                    npm run build &&
+                    npm run test
                 fi
                 `
             ],
@@ -63,9 +65,7 @@ export default async function nodeBuilder(builderInfo: queueData) {
             stderr: true
         })
 
-        const logStream = createLogStream(id)
-
-        container.modem.demuxStream(stream, logStream, logStream)
+        container.modem.demuxStream(stream, process.stdout, process.stderr)
 
         const exitData = await container.wait()
         

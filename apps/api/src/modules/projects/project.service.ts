@@ -124,7 +124,7 @@ export const createProject = async (db: NodePgDatabase<Record<string, unknown>>,
 
     try {
         const buildJob = await deployQueue.add(
-            "build",
+            "main",
             queueData,
             {
                 attempts: 3,
