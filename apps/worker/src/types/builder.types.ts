@@ -5,4 +5,5 @@ export type queueData = {
     cloneUrl: string,
     commitSha: string,
     language: string
+    env: string
 }

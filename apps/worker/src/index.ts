@@ -3,6 +3,7 @@ import { connection } from "@repo/queue"
 import nodeBuilder from "./process/node";
 import { queueData } from "./types/builder.types";
 import dotenv from "dotenv"
+import handleDockerDeployment from "./process/node-deploy";
 
 function startWorker() {
     dotenv.config({
@@ -18,13 +19,12 @@ function startWorker() {
             
             switch (String(jobInfo.language).toLowerCase()) {
                 case 'javascript':
-                    builderInfo = await nodeBuilder(job.data as queueData)
-                    if (builderInfo) {
-                        
-                    }
-                    break;
                 case 'typescript':
                     builderInfo = await nodeBuilder(job.data as queueData)
+                    if (builderInfo) {
+                        await handleDockerDeployment(job.data as queueData)
+                        console.log(`Project deployed: [${job.data?.id}]=[${job.data?.name}]`)
+                    }
                     break;
             }
         },

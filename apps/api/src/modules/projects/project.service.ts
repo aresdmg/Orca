@@ -119,7 +119,8 @@ export const createProject = async (db: NodePgDatabase<Record<string, unknown>>,
         repoUrl: deployedProject.repoUrl,
         cloneUrl: deployedProject.cloneUrl,
         commitSha: deployedProject.commitSha,
-        language: createdProject.language
+        language: createdProject.language,
+        env: data?.env
     }
 
     try {
