@@ -25,7 +25,7 @@ export default async function nodeBuilder(builderInfo: queueData): Promise<boole
 
                 if [ -f pnpm-lock.yaml ]; then
                     echo "Using pnpm"
-                    npm install -g pnpm@8 &&
+                    npm install -g pnpm &&
                     pnpm -v &&
                     pnpm install &&
                     pnpm run build && 

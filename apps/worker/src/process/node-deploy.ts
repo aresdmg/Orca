@@ -2,7 +2,7 @@ import Dockerode from "dockerode";
 import { queueData } from "../types/builder.types";
 
 export default async function handleDockerDeployment(builderInfo: queueData) {
-    const { id, cloneUrl, language, name, commitSha, env } = builderInfo
+    const { id, cloneUrl, language, name, env } = builderInfo
 
     console.log(`Starting deployment for [${id}]=[${name}]`)
     if (language.toLowerCase() != "javascript" && language.toLowerCase() != "typescript") {
@@ -27,22 +27,31 @@ export default async function handleDockerDeployment(builderInfo: queueData) {
 
               if [ -f pnpm-lock.yaml ]; then
                   echo "Using pnpm"
-                  npm install -g pnpm@8 &&
+                  npm install -g pnpm &&
                   pnpm install &&
                   pnpm run build &&
-                  pnpm run start
+
+                  rm -rf node_modules src .git &&
+                  pnpm install --prod &&
+                  pnpm start
 
               elif [ -f yarn.lock ]; then
                   echo "Using yarn"
                   npm install -g yarn &&
                   yarn install &&
                   yarn build &&
+                  
+                  rm -rf node_modules src .git &&
+                  yarn install --production=true &&
                   yarn start
 
               else
                   echo "Using npm"
                   npm install &&
                   npm run build &&
+
+                  rm -rf node_modules src .git &&
+                  npm install --omit=dev &&
                   npm run start
               fi
               `
@@ -67,7 +76,7 @@ export default async function handleDockerDeployment(builderInfo: queueData) {
         const info = await container.inspect();
         const portData = info.NetworkSettings.Ports["8000/tcp"];
         const hostPort = portData?.[0]?.HostPort;
-        console.log(`ORCA >> http://localhost:${hostPort}`);
+        console.log(`Server >> http://localhost:${hostPort}`);
     } catch (error) {
         console.error("Deployment error:", error);
         return false;
